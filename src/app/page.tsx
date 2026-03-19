@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import type { TravelReport } from "@/types/travel";
+import type { TravelFormValues } from "@/lib/schemas";
 import TravelForm from "@/components/TravelForm";
 import TravelReportComponent from "@/components/TravelReport";
 
 export default function Home() {
   const [report, setReport] = useState<TravelReport | null>(null);
   const [destination, setDestination] = useState("");
+  const [formData, setFormData] = useState<TravelFormValues | null>(null);
 
-  function handleReport(newReport: TravelReport, dest: string) {
+  function handleReport(newReport: TravelReport, dest: string, data: TravelFormValues) {
     setReport(newReport);
     setDestination(dest);
+    setFormData(data);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -43,6 +46,7 @@ export default function Home() {
           <TravelReportComponent
             report={report}
             destination={destination}
+            formData={formData!}
             onReset={handleReset}
           />
         )}

@@ -11,7 +11,7 @@ import GroupSection from "./GroupSection";
 import PreferencesSection from "./PreferencesSection";
 
 interface Props {
-  onReport: (report: TravelReport, destination: string) => void;
+  onReport: (report: TravelReport, destination: string, formData: TravelFormValues) => void;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function TravelForm({ onReport }: Props) {
       }
 
       setLoadingStep(0);
-      onReport(json.report, data.destination);
+      onReport(json.report, data.destination, data);
     } catch {
       setApiError("Network error. Please check your connection and try again.");
       setLoadingStep(0);

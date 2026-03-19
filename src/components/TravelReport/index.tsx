@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { TravelReport } from "@/types/travel";
+import type { TravelFormValues } from "@/lib/schemas";
 import SafetyBanner from "./SafetyBanner";
 import Attractions from "./Attractions";
 import Cuisine from "./Cuisine";
@@ -10,15 +11,29 @@ import PracticalInfo from "./PracticalInfo";
 interface Props {
   report: TravelReport;
   destination: string;
+  formData: TravelFormValues;
   onReset: () => void;
 }
 
-export default function TravelReport({ report, destination, onReset }: Props) {
+export default function TravelReport({ report, destination, formData, onReset }: Props) {
   const [safetyAcknowledged, setSafetyAcknowledged] = useState(
     report.safety.level !== "RED"
   );
+  const [pdfState, setPdfState] = useState<"idle" | "generating" | "done">("idle");
 
   const blocked = report.safety.level === "RED" && !safetyAcknowledged;
+
+  async function handleDownload() {
+    setPdfState("generating");
+    try {
+      const { generateTravelPDF } = await import("@/lib/pdf-generator");
+      generateTravelPDF(report, formData);
+      setPdfState("done");
+      setTimeout(() => setPdfState("idle"), 3000);
+    } catch {
+      setPdfState("idle");
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -32,12 +47,40 @@ export default function TravelReport({ report, destination, onReset }: Props) {
             Your personalized travel recommendations
           </p>
         </div>
-        <button
-          onClick={onReset}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          ← Plan Another Trip
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleDownload}
+            disabled={pdfState === "generating"}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {pdfState === "generating" ? (
+              <>
+                <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Generating PDF…
+              </>
+            ) : pdfState === "done" ? (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Guide downloaded!
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download as PDF
+              </>
+            )}
+          </button>
+          <button
+            onClick={onReset}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            ← Plan Another Trip
+          </button>
+        </div>
       </div>
 
       {/* Safety — always shown first */}

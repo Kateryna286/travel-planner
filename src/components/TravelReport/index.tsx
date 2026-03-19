@@ -12,10 +12,13 @@ interface Props {
   report: TravelReport;
   destination: string;
   formData: TravelFormValues;
+  savedGuideId: string | null;
+  onSave: () => void;
+  onViewGuides: () => void;
   onReset: () => void;
 }
 
-export default function TravelReport({ report, destination, formData, onReset }: Props) {
+export default function TravelReport({ report, destination, formData, savedGuideId, onSave, onViewGuides, onReset }: Props) {
   const [safetyAcknowledged, setSafetyAcknowledged] = useState(
     report.safety.level !== "RED"
   );
@@ -48,6 +51,35 @@ export default function TravelReport({ report, destination, formData, onReset }:
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Save guide */}
+          {savedGuideId ? (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm font-medium text-green-700">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                Saved
+              </span>
+              <button
+                onClick={onViewGuides}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2"
+              >
+                View in My Guides →
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onSave}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+              </svg>
+              Save Guide
+            </button>
+          )}
+
+          {/* Download PDF */}
           <button
             onClick={handleDownload}
             disabled={pdfState === "generating"}
@@ -63,22 +95,23 @@ export default function TravelReport({ report, destination, formData, onReset }:
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
-                Guide downloaded!
+                Downloaded!
               </>
             ) : (
               <>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                 </svg>
-                Download as PDF
+                Download PDF
               </>
             )}
           </button>
+
           <button
             onClick={onReset}
             className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            ← Plan Another Trip
+            ← New Guide
           </button>
         </div>
       </div>

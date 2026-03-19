@@ -42,7 +42,7 @@ function safetyBgColor(level: SafetyLevel): RGB {
 }
 
 // ── Guide ID ──────────────────────────────────────────────────────────────────
-function generateGuideId(destination: string, departureDate: string): string {
+export function generateGuideId(destination: string, departureDate: string): string {
   const dest = destination
     .replace(/[^a-zA-Z]/g, "")
     .toUpperCase()
@@ -224,9 +224,10 @@ class PDFWriter {
 
 export function generateTravelPDF(
   report: TravelReport,
-  formData: TravelFormValues
+  formData: TravelFormValues,
+  guideId?: string
 ): void {
-  const guideId = generateGuideId(formData.destination, formData.departureDate);
+  guideId ??= generateGuideId(formData.destination, formData.departureDate);
   const writer = new PDFWriter(guideId);
   const doc = writer.getDoc();
 

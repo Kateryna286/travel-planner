@@ -68,7 +68,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse>>
     // Stage 2: Sonnet — generate full travel report (creative)
     const sonnetResponse = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 4000,
+      max_tokens: 16000,
       temperature: 0.7,
       messages: [{ role: "user", content: buildSonnetPrompt(parsed.data, haiku) }],
     });

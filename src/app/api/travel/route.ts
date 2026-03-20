@@ -1,3 +1,26 @@
+/**
+ * POST /api/travel
+ *
+ * Accepts a JSON body matching TravelFormSchema and returns a TravelReport
+ * built from two parallel claude-sonnet-4-6 calls:
+ *
+ *   Call A — experiences (temp 0.7, max 12 000 tokens)
+ *     Produces: safety, attractions, cuisine, accommodationSuggestions?
+ *
+ *   Call B — practicalities (temp 0.3, max 6 000 tokens)
+ *     Produces: practical, destinationFacts
+ *
+ * Both calls include a destination-validation guard. If either returns
+ * `{ valid: false }` the route responds with HTTP 422 / INVALID_DESTINATION
+ * before merging. Otherwise the two payloads are merged into a single
+ * TravelReport and returned as `{ success: true, report }`.
+ *
+ * Error codes returned in `{ success: false, error, code }`:
+ *   VALIDATION_ERROR    — body fails TravelFormSchema (400)
+ *   INVALID_DESTINATION — AI rejected the destination (422)
+ *   RATE_LIMIT          — Anthropic rate limit hit (429)
+ *   AI_ERROR            — any other pipeline failure (500)
+ */
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { anthropic } from "@/lib/anthropic";

@@ -1,3 +1,13 @@
+/**
+ * @file prompts.ts
+ * Builds the two prompt strings sent to claude-sonnet-4-6 for each travel report.
+ *
+ * The API route fires both prompts in parallel (Promise.all) and merges their
+ * JSON responses into a single TravelReport object.
+ *
+ * PROMPT_VERSION — bump this string whenever the JSON contract (field names,
+ * required keys) changes so that token-usage logs remain identifiable.
+ */
 import type { TravelFormData } from "@/types/travel";
 
 export const PROMPT_VERSION = "v3";
@@ -24,8 +34,29 @@ If the destination IS valid, generate the full report as defined below.
 }
 
 // ── Call A — Experiences ───────────────────────────────────────────────────────
-// Returns: safety, attractions, cuisine, accommodationSuggestions (optional)
 
+/**
+ * Builds the "experiences" prompt (Call A).
+ *
+ * Expected JSON response shape:
+ * ```
+ * {
+ *   valid: true,
+ *   safety: { level, headline, summary, specificRisks[] },
+ *   attractions: Array<{ name, category, priceLevel, priceNote, description,
+ *                        tips[], relevantFor[], howToGet }>,
+ *   cuisine: {
+ *     mustTryDishes[], restaurantCategories[], dietaryConsiderations,
+ *     diningCustoms[], tippingGuidance
+ *   },
+ *   // Only present when accommodation.booked === false:
+ *   accommodationSuggestions?: Array<{ area, why, topNearbyAttractions[] }>
+ * }
+ * ```
+ * On invalid destination the model returns `{ valid: false, reason: string }`.
+ *
+ * Token budget: max_tokens=12000, temperature=0.7
+ */
 export function buildExperiencesPrompt(data: TravelFormData): string {
   const transport = transportLabel(data);
 
@@ -103,8 +134,35 @@ Requirements:
 }
 
 // ── Call B — Practicalities ────────────────────────────────────────────────────
-// Returns: practical (currency, transportation+transportTips, electrical, language, weather, emergency, visa, culturalCustoms)
 
+/**
+ * Builds the "practicalities" prompt (Call B).
+ *
+ * Expected JSON response shape:
+ * ```
+ * {
+ *   valid: true,
+ *   practical: {
+ *     currency: { name, code, exchangeTip, cashVsCard },
+ *     transportation: {
+ *       drivingSide, internationalLicenseRequired, publicTransportSummary,
+ *       taxiRideshareApps[], transportTips[]   // 3-5 tips tailored to transportMode
+ *     },
+ *     electrical: { voltage, plugTypes[], adapterNeeded },
+ *     language: { official[], englishWidelySpoken, usefulPhrases[] },
+ *     weather: { currentSeason, expectedConditions, packingTips[],
+ *                bestSeasons, avoidSeasons? },
+ *     emergency: { policeNumber, ambulanceNumber, touristPolice?, embassyTip },
+ *     visa: { requiredForCommonPassports, processingNote },
+ *     culturalCustoms[]
+ *   },
+ *   destinationFacts: [string, string, string, string, string]  // exactly 5
+ * }
+ * ```
+ * On invalid destination the model returns `{ valid: false, reason: string }`.
+ *
+ * Token budget: max_tokens=6000, temperature=0.3
+ */
 export function buildPracticalitiesPrompt(data: TravelFormData): string {
   const transport = transportLabel(data);
 

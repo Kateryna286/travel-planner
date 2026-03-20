@@ -6,7 +6,7 @@ export interface TravelFormData {
   returnDate: string; // YYYY-MM-DD
   accommodation: {
     booked: boolean;
-    preferences?: AccommodationType[];
+    address?: string; // required when booked === true
   };
   group: {
     adults: number;
@@ -14,6 +14,7 @@ export interface TravelFormData {
     type: GroupType;
   };
   preferences: TravelPreference[];
+  transportMode: "car" | "publicTransport";
 }
 
 export type GroupType = "Family" | "Friends" | "Solo" | "Couple" | "Business";
@@ -29,28 +30,6 @@ export type TravelPreference =
   | "Wellness"
   | "LocalExperiences";
 
-export type AccommodationType =
-  | "Hotel"
-  | "Airbnb"
-  | "Hostel"
-  | "Resort"
-  | "BedAndBreakfast";
-
-// ── Haiku output ──────────────────────────────────────────────────────────────
-
-export interface HaikuOutput {
-  valid: boolean;
-  reason?: string;
-  travelProfile?: string;
-  extractedParams?: {
-    tripDurationDays: number;
-    season: string;
-    groupContext: string;
-    primaryInterests: string[];
-  };
-  concerns?: string[];
-}
-
 // ── Travel Report ─────────────────────────────────────────────────────────────
 
 export interface TravelReport {
@@ -58,6 +37,8 @@ export interface TravelReport {
   attractions: Attraction[];
   cuisine: CuisineReport;
   practical: PracticalInfo;
+  accommodationSuggestions?: AccommodationSuggestion[]; // only when booked === false
+  destinationFacts?: string[];                          // 5 short facts, from Call B
 }
 
 export type SafetyLevel = "RED" | "ORANGE" | "GREEN";
@@ -77,6 +58,13 @@ export interface Attraction {
   description: string;
   tips: string[];
   relevantFor: string[];
+  howToGet: string;
+}
+
+export interface AccommodationSuggestion {
+  area: string;
+  why: string;
+  topNearbyAttractions: string[];
 }
 
 export interface CuisineReport {
@@ -115,6 +103,7 @@ export interface PracticalInfo {
     internationalLicenseRequired: boolean;
     publicTransportSummary: string;
     taxiRideshareApps: string[];
+    transportTips: string[];
   };
   electrical: {
     voltage: string;

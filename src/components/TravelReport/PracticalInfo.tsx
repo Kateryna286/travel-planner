@@ -4,23 +4,25 @@ interface Props {
   practical: PracticalInfo;
 }
 
-function Card({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+function SectionBar({ title }: { title: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2">
-      <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
-        <span aria-hidden="true">{icon}</span>
-        {title}
-      </h3>
-      <div className="text-sm text-gray-600 space-y-1">{children}</div>
+    <div className="mb-4 rounded-lg bg-[#214068] px-4 py-2.5">
+      <h2 className="text-sm font-bold uppercase tracking-widest text-white">{title}</h2>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function OrangeSubheading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2">
-      <span className="font-medium text-gray-500 shrink-0">{label}:</span>
-      <span>{value}</span>
+    <h3 className="mb-2 text-sm font-bold text-orange-700 uppercase tracking-wide">{children}</h3>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex gap-2 text-sm">
+      <span className="shrink-0 font-semibold text-gray-500 w-28">{label}:</span>
+      <span className="text-gray-700">{value}</span>
     </div>
   );
 }
@@ -29,100 +31,166 @@ export default function PracticalInfo({ practical }: Props) {
   const { currency, transportation, electrical, language, weather, emergency, visa, culturalCustoms } = practical;
 
   return (
-    <section aria-labelledby="practical-heading" className="space-y-4">
-      <h2 id="practical-heading" className="text-xl font-bold text-gray-900">
-        📋 Essential Practical Information
-      </h2>
+    <section aria-labelledby="practical-heading" className="space-y-6">
+      <SectionBar title="Practical Information" />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* 2-column grid for compact sections */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
 
         {/* Currency */}
-        <Card title="Currency" icon="💰">
-          <Row label="Currency" value={`${currency.name} (${currency.code})`} />
-          <Row label="Exchange" value={currency.exchangeTip} />
-          <Row label="Payment" value={currency.cashVsCard} />
-        </Card>
-
-        {/* Transport */}
-        <Card title="Transportation" icon="🚗">
-          <Row label="Drive on" value={transportation.drivingSide === "left" ? "Left side" : "Right side"} />
-          <Row label="Int'l license" value={transportation.internationalLicenseRequired ? "Required" : "Not required"} />
-          <Row label="Public transit" value={transportation.publicTransportSummary} />
-          {transportation.taxiRideshareApps.length > 0 && (
-            <Row label="Apps" value={transportation.taxiRideshareApps.join(", ")} />
-          )}
-        </Card>
-
-        {/* Electrical */}
-        <Card title="Electricity" icon="🔌">
-          <Row label="Voltage" value={electrical.voltage} />
-          <Row label="Plug types" value={electrical.plugTypes.join(", ")} />
-          <Row label="Adapter" value={electrical.adapterNeeded ? "⚠️ Adapter needed" : "✓ No adapter needed"} />
-        </Card>
-
-        {/* Language */}
-        <Card title="Language" icon="💬">
-          <Row label="Official" value={language.official.join(", ")} />
-          <Row label="English" value={language.englishWidelySpoken ? "Widely spoken" : "Limited"} />
-          {language.usefulPhrases.length > 0 && (
-            <div className="mt-2 space-y-1">
-              <p className="font-medium text-gray-500 text-xs uppercase tracking-wide">Useful phrases</p>
-              {language.usefulPhrases.map((p, i) => (
-                <div key={i} className="flex gap-2 text-xs">
-                  <span className="font-medium text-gray-700 shrink-0">"{p.phrase}"</span>
-                  <span className="text-gray-500">= {p.translation}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* Weather */}
-        <Card title="Weather" icon="🌤️">
-          <Row label="Season" value={weather.currentSeason} />
-          <Row label="Conditions" value={weather.expectedConditions} />
-          <Row label="Best time" value={weather.bestSeasons} />
-          {weather.avoidSeasons && <Row label="Avoid" value={weather.avoidSeasons} />}
-          {weather.packingTips.length > 0 && (
-            <div className="mt-1">
-              <span className="font-medium text-gray-500">Pack: </span>
-              {weather.packingTips.join(", ")}
-            </div>
-          )}
-        </Card>
-
-        {/* Emergency */}
-        <Card title="Emergency Contacts" icon="🚨">
-          <Row label="Police" value={<span className="font-mono font-bold">{emergency.policeNumber}</span>} />
-          <Row label="Ambulance" value={<span className="font-mono font-bold">{emergency.ambulanceNumber}</span>} />
-          {emergency.touristPolice && (
-            <Row label="Tourist police" value={<span className="font-mono font-bold">{emergency.touristPolice}</span>} />
-          )}
-          <p className="text-xs text-gray-500 mt-1 italic">{emergency.embassyTip}</p>
-        </Card>
-
-        {/* Visa */}
-        <Card title="Visa Requirements" icon="🛂">
-          <Row label="Required?" value={visa.requiredForCommonPassports} />
-          <p className="text-xs text-gray-500 italic">{visa.processingNote}</p>
-        </Card>
-
-        {/* Cultural customs */}
-        <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-2 sm:col-span-2">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
-            <span aria-hidden="true">🙏</span>
-            Cultural Customs & Etiquette
-          </h3>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            {culturalCustoms.map((custom, i) => (
-              <li key={i} className="flex gap-2 text-sm text-gray-600">
-                <span className="text-indigo-400 shrink-0">•</span>
-                <span>{custom}</span>
-              </li>
-            ))}
-          </ul>
+        <div>
+          <OrangeSubheading>Currency & Money</OrangeSubheading>
+          <div className="space-y-1.5">
+            <p className="text-sm font-semibold text-[#214068]">{currency.name} ({currency.code})</p>
+            <p className="text-sm text-gray-700">{currency.exchangeTip}</p>
+            <p className="text-sm text-gray-700">{currency.cashVsCard}</p>
+          </div>
         </div>
 
+        {/* Electricity */}
+        <div>
+          <OrangeSubheading>Electricity</OrangeSubheading>
+          <div className="space-y-1.5">
+            <InfoRow label="Voltage" value={electrical.voltage} />
+            <InfoRow label="Plug types" value={electrical.plugTypes.join(", ")} />
+            <InfoRow label="Adapter" value={
+              electrical.adapterNeeded
+                ? <span className="font-semibold text-orange-700">⚠ Adapter needed</span>
+                : <span className="text-green-700">✓ No adapter needed</span>
+            } />
+          </div>
+        </div>
+
+        {/* Transportation */}
+        <div>
+          <OrangeSubheading>Getting Around</OrangeSubheading>
+          <div className="space-y-1.5">
+            <InfoRow
+              label="Driving"
+              value={
+                <span>
+                  {transportation.drivingSide === "left" ? "Keep LEFT" : "Keep RIGHT"}
+                  {transportation.internationalLicenseRequired && (
+                    <span className="ml-1 text-orange-700 font-medium">· Int&apos;l licence required</span>
+                  )}
+                </span>
+              }
+            />
+            <p className="text-sm text-gray-700 pl-[7.5rem]">{transportation.publicTransportSummary}</p>
+            {transportation.taxiRideshareApps.length > 0 && (
+              <InfoRow label="Apps" value={transportation.taxiRideshareApps.join(", ")} />
+            )}
+          </div>
+        </div>
+
+        {/* Transport tips */}
+        {transportation.transportTips && transportation.transportTips.length > 0 && (
+          <div>
+            <OrangeSubheading>Transport Tips</OrangeSubheading>
+            <ul className="space-y-1.5">
+              {transportation.transportTips.map((tip, i) => (
+                <li key={i} className="flex gap-2 text-sm text-gray-700">
+                  <span className="shrink-0 text-orange-400">–</span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Language */}
+        <div>
+          <OrangeSubheading>Language</OrangeSubheading>
+          <div className="space-y-1.5">
+            <InfoRow label="Official" value={language.official.join(", ")} />
+            <InfoRow
+              label="English"
+              value={language.englishWidelySpoken ? "Widely spoken" : "Limited"}
+            />
+            {language.usefulPhrases.length > 0 && (
+              <div className="mt-2 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Useful Phrases</p>
+                {language.usefulPhrases.map((ph, i) => (
+                  <div key={i} className="flex gap-2 text-xs">
+                    <span className="font-medium text-[#214068] shrink-0">"{ph.phrase}"</span>
+                    <span className="text-gray-500">→ {ph.translation}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Weather */}
+      <div>
+        <OrangeSubheading>Weather & Packing</OrangeSubheading>
+        <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 space-y-2">
+          <div className="flex flex-wrap gap-x-6 gap-y-1">
+            <InfoRow label="Season" value={weather.currentSeason} />
+            <InfoRow label="Conditions" value={weather.expectedConditions} />
+            {weather.bestSeasons && <InfoRow label="Best time" value={weather.bestSeasons} />}
+            {weather.avoidSeasons && <InfoRow label="Avoid" value={weather.avoidSeasons} />}
+          </div>
+          {weather.packingTips.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 mb-1">Pack:</p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                {weather.packingTips.map((tip, i) => (
+                  <li key={i} className="flex gap-1.5 text-sm text-gray-700">
+                    <span className="text-orange-400 shrink-0">–</span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Visa */}
+      <div>
+        <OrangeSubheading>Visa Requirements</OrangeSubheading>
+        <p className="text-sm text-gray-700">{visa.requiredForCommonPassports}</p>
+        <p className="mt-1 text-xs italic text-gray-400">{visa.processingNote}</p>
+      </div>
+
+      {/* Emergency — light blue box */}
+      <div>
+        <OrangeSubheading>Emergency Contacts</OrangeSubheading>
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-2 gap-x-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-[#214068]">Police</p>
+              <p className="font-mono text-lg font-bold text-gray-800">{emergency.policeNumber}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-[#214068]">Ambulance</p>
+              <p className="font-mono text-lg font-bold text-gray-800">{emergency.ambulanceNumber}</p>
+            </div>
+            {emergency.touristPolice && (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#214068]">Tourist Police</p>
+                <p className="font-mono text-lg font-bold text-gray-800">{emergency.touristPolice}</p>
+              </div>
+            )}
+          </div>
+          <p className="text-xs italic text-gray-500">{emergency.embassyTip}</p>
+        </div>
+      </div>
+
+      {/* Cultural customs */}
+      <div>
+        <OrangeSubheading>Cultural Customs & Etiquette</OrangeSubheading>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          {culturalCustoms.map((custom, i) => (
+            <li key={i} className="flex gap-2 text-sm text-gray-700">
+              <span className="shrink-0 text-orange-400">–</span>
+              <span>{custom}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

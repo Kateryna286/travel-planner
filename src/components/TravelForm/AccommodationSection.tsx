@@ -2,31 +2,22 @@
 
 import { useFormContext, Controller } from "react-hook-form";
 import type { TravelFormValues } from "@/lib/schemas";
-import type { AccommodationType } from "@/types/travel";
-
-const ACCOMMODATION_OPTIONS: { value: AccommodationType; label: string }[] = [
-  { value: "Hotel", label: "Hotel" },
-  { value: "Airbnb", label: "Airbnb / Vacation Rental" },
-  { value: "Hostel", label: "Hostel" },
-  { value: "Resort", label: "Resort" },
-  { value: "BedAndBreakfast", label: "Bed & Breakfast" },
-];
 
 export default function AccommodationSection() {
-  const { watch, setValue, control } = useFormContext<TravelFormValues>();
-  const booked = watch("accommodation.booked");
-  const prefs = watch("accommodation.preferences") ?? [];
+  const {
+    watch,
+    register,
+    control,
+    formState: { errors },
+  } = useFormContext<TravelFormValues>();
 
-  function togglePreference(value: AccommodationType) {
-    const next = prefs.includes(value)
-      ? prefs.filter((p) => p !== value)
-      : [...prefs, value];
-    setValue("accommodation.preferences", next as AccommodationType[]);
-  }
+  const booked = watch("accommodation.booked");
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-gray-900">Accommodation</h2>
+
+      {/* Booked toggle */}
       <Controller
         control={control}
         name="accommodation.booked"
@@ -52,27 +43,43 @@ export default function AccommodationSection() {
           </div>
         )}
       />
-      {!booked && (
+
+      {/* Already booked — address field */}
+      {booked && (
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">
-            Accommodation preferences <span className="text-gray-400 font-normal">(optional)</span>
+          <label
+            htmlFor="accommodation-address"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Your accommodation address or hotel name
+            <span className="ml-1 text-red-500">*</span>
+          </label>
+          <input
+            id="accommodation-address"
+            type="text"
+            placeholder="e.g. Hotel Hilton, 123 Main Street, Paris"
+            {...register("accommodation.address")}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-describedby={errors.accommodation?.address ? "address-error" : undefined}
+          />
+          {errors.accommodation?.address && (
+            <p id="address-error" className="mt-1 text-xs text-red-600">
+              {errors.accommodation.address.message}
+            </p>
+          )}
+          <p className="mt-1.5 text-xs text-gray-400">
+            We&apos;ll prioritize attractions close to your accommodation.
           </p>
-          <div className="flex flex-wrap gap-2">
-            {ACCOMMODATION_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => togglePreference(opt.value)}
-                className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
-                  prefs.includes(opt.value)
-                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+        </div>
+      )}
+
+      {/* Not yet booked — hint */}
+      {!booked && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-800">
+            <span className="font-semibold">📍 Location tips included:</span>{" "}
+            We&apos;ll suggest the best neighborhoods or areas to stay based on your itinerary.
+          </p>
         </div>
       )}
     </div>

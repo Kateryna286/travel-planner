@@ -5,9 +5,11 @@ import type { SavedGuide } from "@/lib/guides-storage";
 
 interface Props {
   guide: SavedGuide;
-  onView: () => void;
-  onDownload: () => void;
-  onDelete: () => void;
+  variant: "grid" | "gallery";
+  isSelected?: boolean;
+  onClick: () => void;
+  onDownload?: () => void;
+  onDelete?: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -37,51 +39,85 @@ const SAFETY_PILL: Record<string, string> = {
   GREEN: "bg-green-100 text-green-700 border-green-200",
 };
 
-export default function GuideCard({ guide, onView, onDownload, onDelete }: Props) {
+const SAFETY_DOT: Record<string, string> = {
+  RED: "bg-red-500",
+  ORANGE: "bg-amber-400",
+  GREEN: "bg-green-500",
+};
+
+// ── Gallery (compact horizontal thumbnail) ─────────────────────────────────
+function GalleryCard({ guide, isSelected, onClick }: Props) {
+  const level = guide.report.safety.level;
+  return (
+    <button
+      onClick={onClick}
+      className={`shrink-0 w-36 rounded-lg border-2 p-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-[#214068] ${
+        isSelected
+          ? "border-[#214068] bg-blue-50 shadow-md"
+          : "border-gray-200 bg-white hover:border-gray-400 hover:shadow-sm"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-1 mb-1.5">
+        <p className="text-sm font-bold text-gray-900 leading-tight line-clamp-2 flex-1">
+          {guide.destination}
+        </p>
+        <span className={`mt-0.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full ${SAFETY_DOT[level]}`} />
+      </div>
+      <p className="text-[10px] text-gray-500 leading-snug">
+        {formatDate(guide.departureDate)}
+      </p>
+      <p className="text-[10px] text-gray-500 leading-snug">
+        {formatDate(guide.returnDate)}
+      </p>
+      <p className="mt-1 text-[10px] font-medium text-gray-400 truncate">
+        {guide.groupType}
+      </p>
+    </button>
+  );
+}
+
+// ── Grid (full card with actions) ──────────────────────────────────────────
+function GridCard({ guide, onClick, onDownload, onDelete }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const safetyLevel = guide.report.safety.level;
+  const level = guide.report.safety.level;
   const groupDesc =
     guide.groupSize.children > 0
       ? `${guide.groupSize.adults} adult${guide.groupSize.adults > 1 ? "s" : ""}, ${guide.groupSize.children} child${guide.groupSize.children > 1 ? "ren" : ""} · ${guide.groupType}`
       : `${guide.groupSize.adults} traveller${guide.groupSize.adults > 1 ? "s" : ""} · ${guide.groupType}`;
 
-  async function handleDownload() {
+  function handleDownload(e: React.MouseEvent) {
+    e.stopPropagation();
     setDownloading(true);
-    onDownload();
+    onDownload?.();
     setTimeout(() => setDownloading(false), 3000);
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
-      {/* Top row: destination + safety badge */}
+    <div
+      onClick={onClick}
+      className="flex cursor-pointer flex-col gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+    >
+      {/* Top row */}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-xl font-bold text-gray-900 leading-tight">
-          {guide.destination}
-        </h3>
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${SAFETY_PILL[safetyLevel]}`}
-        >
-          {safetyLevel}
+        <h3 className="text-xl font-bold leading-tight text-gray-900">{guide.destination}</h3>
+        <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${SAFETY_PILL[level]}`}>
+          {level}
         </span>
       </div>
 
-      {/* Trip details */}
+      {/* Details */}
       <div className="space-y-1 text-sm text-gray-600">
         <p>
-          <span className="font-medium text-gray-700">
-            {formatDate(guide.departureDate)}
-          </span>
+          <span className="font-medium text-gray-700">{formatDate(guide.departureDate)}</span>
           {" — "}
-          <span className="font-medium text-gray-700">
-            {formatDate(guide.returnDate)}
-          </span>
+          <span className="font-medium text-gray-700">{formatDate(guide.returnDate)}</span>
         </p>
         <p>{groupDesc}</p>
       </div>
 
-      {/* Guide ID + created */}
+      {/* ID + time */}
       <div className="flex items-center justify-between text-xs text-gray-400">
         <code className="font-mono">{guide.id}</code>
         <span title={new Date(guide.createdAt).toLocaleString()}>
@@ -90,12 +126,12 @@ export default function GuideCard({ guide, onView, onDownload, onDelete }: Props
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-1 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={onView}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          onClick={onClick}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
@@ -105,40 +141,40 @@ export default function GuideCard({ guide, onView, onDownload, onDelete }: Props
         <button
           onClick={handleDownload}
           disabled={downloading}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
         >
           {downloading ? (
-            <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
           ) : (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
           )}
-          {downloading ? "Downloading…" : "PDF"}
+          {downloading ? "…" : "PDF"}
         </button>
 
         {!confirmDelete ? (
           <button
-            onClick={() => setConfirmDelete(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors ml-auto"
+            onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
             </svg>
             Delete
           </button>
         ) : (
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-xs text-gray-500">Delete this guide?</span>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-gray-500">Delete?</span>
             <button
-              onClick={onDelete}
-              className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 transition-colors"
+              onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+              className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-red-700"
             >
-              Yes, delete
+              Yes
             </button>
             <button
-              onClick={() => setConfirmDelete(false)}
-              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
+              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
             >
               Cancel
             </button>
@@ -147,4 +183,9 @@ export default function GuideCard({ guide, onView, onDownload, onDelete }: Props
       </div>
     </div>
   );
+}
+
+export default function GuideCard(props: Props) {
+  if (props.variant === "gallery") return <GalleryCard {...props} />;
+  return <GridCard {...props} />;
 }

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { anthropic } from "@/lib/anthropic";
 import { TravelFormSchema } from "@/lib/schemas";
-import { buildHaikuPrompt, buildSonnetPrompt, HAIKU_PROMPT_VERSION, SONNET_PROMPT_VERSION } from "@/lib/prompts";
-import type { ApiResponse, HaikuOutput, TravelReport } from "@/types/travel";
+import { buildExperiencesPrompt, buildPracticalitiesPrompt, PROMPT_VERSION } from "@/lib/prompts";
+import type { ApiResponse, TravelReport } from "@/types/travel";
 
 function extractText(response: Anthropic.Message): string {
   const block = response.content[0];
@@ -15,13 +15,28 @@ function safeParseJSON<T>(raw: string): T {
   try {
     return JSON.parse(raw) as T;
   } catch {
-    // Strip markdown code fences if model wrapped output despite instructions
     const stripped = raw
       .replace(/^```(?:json)?\n?/, "")
       .replace(/\n?```$/, "")
       .trim();
     return JSON.parse(stripped) as T;
   }
+}
+
+async function callSonnet(
+  prompt: string,
+  opts: { label: string; temperature: number; maxTokens: number }
+): Promise<Record<string, unknown>> {
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: opts.maxTokens,
+    temperature: opts.temperature,
+    messages: [{ role: "user", content: prompt }],
+  });
+  console.log(
+    `[/api/travel] ${opts.label} prompt=${PROMPT_VERSION} in=${response.usage.input_tokens} out=${response.usage.output_tokens}`
+  );
+  return safeParseJSON<Record<string, unknown>>(extractText(response));
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse>> {
@@ -42,40 +57,54 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse>>
   }
 
   try {
-    // Stage 1: Haiku — validate & summarize (deterministic)
-    const haikuResponse = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 500,
-      temperature: 0,
-      messages: [{ role: "user", content: buildHaikuPrompt(parsed.data) }],
-    });
+    const [experiencesRaw, practicalitiesRaw] = await Promise.all([
+      callSonnet(buildExperiencesPrompt(parsed.data), {
+        label: "experiences",
+        temperature: 0.7,
+        maxTokens: 12000,
+      }),
+      callSonnet(buildPracticalitiesPrompt(parsed.data), {
+        label: "practicalities",
+        temperature: 0.3,
+        maxTokens: 6000,
+      }),
+    ]);
 
-    console.log(`[/api/travel] haiku prompt=${HAIKU_PROMPT_VERSION} input_tokens=${haikuResponse.usage.input_tokens} output_tokens=${haikuResponse.usage.output_tokens}`);
-
-    const haiku = safeParseJSON<HaikuOutput>(extractText(haikuResponse));
-
-    if (!haiku.valid) {
+    // Check destination validation from both calls
+    if (experiencesRaw.valid === false) {
       return NextResponse.json(
         {
           success: false,
-          error: haiku.reason ?? "Destination not recognized. Try a more specific city or country name.",
+          error: (experiencesRaw.reason as string | undefined) ?? "Destination not recognized. Try a more specific city or country name.",
+          code: "INVALID_DESTINATION",
+        },
+        { status: 422 }
+      );
+    }
+    if (practicalitiesRaw.valid === false) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: (practicalitiesRaw.reason as string | undefined) ?? "Destination not recognized. Try a more specific city or country name.",
           code: "INVALID_DESTINATION",
         },
         { status: 422 }
       );
     }
 
-    // Stage 2: Sonnet — generate full travel report (creative)
-    const sonnetResponse = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 16000,
-      temperature: 0.7,
-      messages: [{ role: "user", content: buildSonnetPrompt(parsed.data, haiku) }],
-    });
-
-    console.log(`[/api/travel] sonnet prompt=${SONNET_PROMPT_VERSION} input_tokens=${sonnetResponse.usage.input_tokens} output_tokens=${sonnetResponse.usage.output_tokens}`);
-
-    const report = safeParseJSON<TravelReport>(extractText(sonnetResponse));
+    // Merge the two results into a single TravelReport
+    const report: TravelReport = {
+      safety:      experiencesRaw.safety      as TravelReport["safety"],
+      attractions: experiencesRaw.attractions as TravelReport["attractions"],
+      cuisine:     experiencesRaw.cuisine     as TravelReport["cuisine"],
+      practical:   practicalitiesRaw.practical as TravelReport["practical"],
+      ...(experiencesRaw.accommodationSuggestions
+        ? { accommodationSuggestions: experiencesRaw.accommodationSuggestions as TravelReport["accommodationSuggestions"] }
+        : {}),
+      ...(Array.isArray(practicalitiesRaw.destinationFacts)
+        ? { destinationFacts: practicalitiesRaw.destinationFacts as string[] }
+        : {}),
+    };
 
     return NextResponse.json({ success: true, report });
   } catch (err) {

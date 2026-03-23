@@ -1,3 +1,11 @@
+/**
+ * Auth.js v5 configuration.
+ *
+ * Uses JWT strategy (stateless, edge-compatible) with the Drizzle adapter
+ * for persisting OAuth accounts. The jwt + session callbacks explicitly
+ * propagate user.id into token.sub and back into session.user.id, since
+ * Auth.js v5 does not do this by default.
+ */
 import NextAuth from "next-auth";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import Credentials from "next-auth/providers/credentials";

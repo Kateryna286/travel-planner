@@ -87,7 +87,7 @@ export default function MyGuidesPage({
   const pageGuides = filteredGuides.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  function handleSavePending() {
+  async function handleSavePending() {
     if (!pendingReport || !pendingGuideId) return;
     const guide: SavedGuide = {
       id: pendingGuideId,
@@ -103,7 +103,7 @@ export default function MyGuidesPage({
       formData: pendingReport.formData,
       createdAt: new Date().toISOString(),
     };
-    onSavePending(guide);          // parent saves to storage + clears pendingReport
+    await onSavePending(guide);    // parent saves to storage + clears pendingReport
     setSelectedGuideId(pendingGuideId); // switch to showing the newly saved guide
   }
 
@@ -117,10 +117,10 @@ export default function MyGuidesPage({
     setSelectedGuideId(null);
   }
 
-  function handleDeleteSelected() {
+  async function handleDeleteSelected() {
     if (!selectedGuideId) return;
     const remaining = guides.filter((g) => g.id !== selectedGuideId);
-    onDelete(selectedGuideId);
+    await onDelete(selectedGuideId);
     if (remaining.length > 0) {
       setSelectedGuideId(remaining[0].id);
     } else {

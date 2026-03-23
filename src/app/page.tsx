@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { TravelReport } from "@/types/travel";
 import type { TravelFormValues } from "@/lib/schemas";
 import { useGuides } from "@/hooks/useGuides";
@@ -25,7 +26,7 @@ export default function Home() {
 
   const { data: session } = useSession();
   const router = useRouter();
-  const { guides, save, remove } = useGuides();
+  const { guides, save, remove, loading: guidesLoading, error: guidesError } = useGuides();
 
   function handleReport(newReport: TravelReport, dest: string, data: TravelFormValues) {
     setPendingReport({ report: newReport, destination: dest, formData: data });
@@ -35,7 +36,7 @@ export default function Home() {
 
   async function handleSavePending(guide: SavedGuide) {
     if (!session) {
-      router.push("/auth/sign-in?callbackUrl=/");
+      router.replace("/auth/sign-in?callbackUrl=/");
       return;
     }
     try {
@@ -79,7 +80,7 @@ export default function Home() {
           <div className="shrink-0 ml-4 mt-1">
             {session ? (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">{session.user?.name}</span>
+                <span className="text-sm text-gray-600">{session.user?.name ?? session.user?.email ?? "Account"}</span>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
@@ -88,19 +89,32 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              <a
+              <Link
                 href="/auth/sign-in"
                 className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
               >
                 Sign in
-              </a>
+              </Link>
             )}
           </div>
         </div>
 
+        {guidesError && (
+          <div className="mb-4 flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{guidesError}</span>
+          </div>
+        )}
+
         {saveError && (
-          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-            {saveError}
+          <div className="mb-4 flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{saveError}</span>
+            <button
+              onClick={() => setSaveError(null)}
+              className="ml-3 shrink-0 font-bold hover:opacity-70"
+              aria-label="Dismiss"
+            >
+              &times;
+            </button>
           </div>
         )}
 
@@ -137,6 +151,10 @@ export default function Home() {
         {activeTab === "new" ? (
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
             <TravelForm onReport={handleReport} />
+          </div>
+        ) : guidesLoading ? (
+          <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm text-center text-sm text-gray-500">
+            Loading your guides…
           </div>
         ) : (
           <MyGuidesPage

@@ -9,6 +9,7 @@ import type { TravelFormValues } from "@/lib/schemas";
 import { useGuides } from "@/hooks/useGuides";
 import TravelForm from "@/components/TravelForm";
 import MyGuidesPage from "@/components/MyGuides";
+import { MigrationBanner } from "@/components/MigrationBanner";
 import type { SavedGuide } from "@/lib/guides-storage";
 
 type Tab = "new" | "guides";
@@ -157,13 +158,18 @@ export default function Home() {
             Loading your guides…
           </div>
         ) : (
-          <MyGuidesPage
-            guides={guides}
-            pendingReport={pendingReport}
-            onSavePending={handleSavePending}
-            onDelete={handleDelete}
-            onDownload={handleDownload}
-          />
+          <>
+            {activeTab === "guides" && session && (
+              <MigrationBanner onImport={save} />
+            )}
+            <MyGuidesPage
+              guides={guides}
+              pendingReport={pendingReport}
+              onSavePending={handleSavePending}
+              onDelete={handleDelete}
+              onDownload={handleDownload}
+            />
+          </>
         )}
       </div>
     </main>

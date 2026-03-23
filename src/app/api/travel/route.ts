@@ -24,6 +24,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { anthropic } from "@/lib/anthropic";
+import { auth } from "@/lib/auth";
 import { TravelFormSchema } from "@/lib/schemas";
 import { buildExperiencesPrompt, buildPracticalitiesPrompt, PROMPT_VERSION } from "@/lib/prompts";
 import type { ApiResponse, TravelReport } from "@/types/travel";
@@ -63,6 +64,14 @@ async function callSonnet(
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse>> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized", code: "UNAUTHORIZED" },
+      { status: 401 }
+    );
+  }
+
   const body = await req.json().catch(() => null);
   if (!body) {
     return NextResponse.json(

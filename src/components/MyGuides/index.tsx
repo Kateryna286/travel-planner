@@ -17,8 +17,8 @@ type View = "grid" | "expanded";
 interface Props {
   guides: SavedGuide[];
   pendingReport: PendingReport | null;
-  onSavePending: (guide: SavedGuide) => void;
-  onDelete: (id: string) => void;
+  onSavePending: (guide: SavedGuide) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   onDownload: (guide: SavedGuide) => void;
 }
 

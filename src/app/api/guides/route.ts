@@ -29,7 +29,7 @@ export async function GET() {
     groupSize: row.groupSize as SavedGuide["groupSize"],
     report: row.report as SavedGuide["report"],
     formData: row.formData as SavedGuide["formData"],
-    createdAt: row.createdAt.toISOString(),
+    createdAt: row.createdAt?.toISOString() ?? new Date().toISOString(),
   }));
 
   return NextResponse.json({ success: true, guides: result });

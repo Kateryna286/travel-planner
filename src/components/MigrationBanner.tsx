@@ -43,9 +43,13 @@ export function MigrationBanner({ onImport }: Props) {
         // leave failed guides in localStorage — retry on next sign-in
       }
     }
-    localStorage.setItem(DISMISSED_KEY, "1");
+    if (remaining.length === 0) {
+      localStorage.setItem(DISMISSED_KEY, "1");
+      setDone(true);
+    } else {
+      setLocalGuides(remaining);
+    }
     setImporting(false);
-    setDone(true);
   }
 
   function handleDismiss() {

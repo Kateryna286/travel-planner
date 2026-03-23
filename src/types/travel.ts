@@ -219,4 +219,5 @@ export type ApiErrorCode =
   | "INVALID_DESTINATION"
   | "AI_ERROR"
   | "RATE_LIMIT"
-  | "TIMEOUT";
+  | "TIMEOUT"
+  | "UNAUTHORIZED";

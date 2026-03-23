@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { TravelReport } from "@/types/travel";
 import type { TravelFormValues } from "@/lib/schemas";
 import { useGuides } from "@/hooks/useGuides";
 import TravelForm from "@/components/TravelForm";
 import MyGuidesPage from "@/components/MyGuides";
+import { MigrationBanner } from "@/components/MigrationBanner";
 import type { SavedGuide } from "@/lib/guides-storage";
 
 type Tab = "new" | "guides";
@@ -19,8 +23,11 @@ export interface PendingReport {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("new");
   const [pendingReport, setPendingReport] = useState<PendingReport | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const { guides, save, remove } = useGuides();
+  const { data: session } = useSession();
+  const router = useRouter();
+  const { guides, save, remove, loading: guidesLoading, error: guidesError } = useGuides();
 
   function handleReport(newReport: TravelReport, dest: string, data: TravelFormValues) {
     setPendingReport({ report: newReport, destination: dest, formData: data });
@@ -28,9 +35,26 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleSavePending(guide: SavedGuide) {
-    save(guide);
-    setPendingReport(null);
+  async function handleSavePending(guide: SavedGuide) {
+    if (!session) {
+      router.replace("/auth/sign-in?callbackUrl=/");
+      return;
+    }
+    try {
+      setSaveError(null);
+      await save(guide);
+      setPendingReport(null);
+    } catch {
+      setSaveError("Failed to save guide — please try again.");
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await remove(id);
+    } catch {
+      // silent — guide stays in list
+    }
   }
 
   async function handleDownload(guide: SavedGuide) {
@@ -45,12 +69,55 @@ export default function Home() {
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
 
         {/* Page header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">✈️ Travel Planner</h1>
-          <p className="mx-auto mt-3 max-w-xl text-lg text-gray-600">
-            AI-generated travel guides — safety, attractions, food, and everything you need.
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div className="text-center flex-1">
+            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">✈️ Travel Planner</h1>
+            <p className="mx-auto mt-3 max-w-xl text-lg text-gray-600">
+              AI-generated travel guides — safety, attractions, food, and everything you need.
+            </p>
+          </div>
+
+          {/* User menu */}
+          <div className="shrink-0 ml-4 mt-1">
+            {session ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600">{session.user?.name ?? session.user?.email ?? "Account"}</span>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/auth/sign-in"
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Sign in
+              </Link>
+            )}
+          </div>
         </div>
+
+        {guidesError && (
+          <div className="mb-4 flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{guidesError}</span>
+          </div>
+        )}
+
+        {saveError && (
+          <div className="mb-4 flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{saveError}</span>
+            <button
+              onClick={() => setSaveError(null)}
+              className="ml-3 shrink-0 font-bold hover:opacity-70"
+              aria-label="Dismiss"
+            >
+              &times;
+            </button>
+          </div>
+        )}
 
         {/* Tab navigation */}
         <div className="mb-8 flex gap-1 rounded-xl bg-gray-100 p-1">
@@ -86,14 +153,21 @@ export default function Home() {
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
             <TravelForm onReport={handleReport} />
           </div>
+        ) : guidesLoading ? (
+          <div className="rounded-2xl border border-gray-200 bg-white p-10 shadow-sm text-center text-sm text-gray-500">
+            Loading your guides…
+          </div>
         ) : (
-          <MyGuidesPage
-            guides={guides}
-            pendingReport={pendingReport}
-            onSavePending={handleSavePending}
-            onDelete={remove}
-            onDownload={handleDownload}
-          />
+          <>
+            {session && <MigrationBanner onImport={save} />}
+            <MyGuidesPage
+              guides={guides}
+              pendingReport={pendingReport}
+              onSavePending={handleSavePending}
+              onDelete={handleDelete}
+              onDownload={handleDownload}
+            />
+          </>
         )}
       </div>
     </main>

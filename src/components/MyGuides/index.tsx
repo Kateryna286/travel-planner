@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import type { SavedGuide } from "@/lib/guides-storage";
 import type { PendingReport } from "@/app/page";
@@ -17,8 +17,8 @@ type View = "grid" | "expanded";
 interface Props {
   guides: SavedGuide[];
   pendingReport: PendingReport | null;
-  onSavePending: (guide: SavedGuide) => void;
-  onDelete: (id: string) => void;
+  onSavePending: (guide: SavedGuide) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   onDownload: (guide: SavedGuide) => void;
 }
 
@@ -29,8 +29,8 @@ export default function MyGuidesPage({
   onDelete,
   onDownload,
 }: Props) {
-  const [view, setView] = useState<View>("grid");
-  const [selectedGuideId, setSelectedGuideId] = useState<string | null>(null);
+  const [userView, setUserView] = useState<View>("grid");
+  const [userSelectedGuideId, setUserSelectedGuideId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
@@ -47,26 +47,20 @@ export default function MyGuidesPage({
     [pendingReport]
   );
 
-  // Auto-enter expanded view when a new pending report arrives
-  useEffect(() => {
-    if (pendingReport) {
-      setView("expanded");
-      setSelectedGuideId(null); // null = show pending report
-    }
-  }, [pendingReport]);
+  // Derive effective view: auto-expand when a pending report arrives
+  const view: View = pendingReport ? "expanded" : userView;
 
-  // If the selected guide is deleted externally, fall back to grid
-  useEffect(() => {
+  // Derive effective selectedGuideId: clear if the selected guide no longer exists
+  const selectedGuideId: string | null = (() => {
+    if (pendingReport) return null; // show pending report
     if (
-      view === "expanded" &&
-      selectedGuideId &&
-      !guides.find((g) => g.id === selectedGuideId) &&
-      !pendingReport
+      userSelectedGuideId &&
+      !guides.find((g) => g.id === userSelectedGuideId)
     ) {
-      setView("grid");
-      setSelectedGuideId(null);
+      return null;
     }
-  }, [view, selectedGuideId, guides, pendingReport]);
+    return userSelectedGuideId;
+  })();
 
   // ── Filtered + sorted guides ───────────────────────────────────────────────
   const filteredGuides = useMemo(() => {
@@ -87,7 +81,7 @@ export default function MyGuidesPage({
   const pageGuides = filteredGuides.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  function handleSavePending() {
+  async function handleSavePending() {
     if (!pendingReport || !pendingGuideId) return;
     const guide: SavedGuide = {
       id: pendingGuideId,
@@ -103,29 +97,29 @@ export default function MyGuidesPage({
       formData: pendingReport.formData,
       createdAt: new Date().toISOString(),
     };
-    onSavePending(guide);          // parent saves to storage + clears pendingReport
-    setSelectedGuideId(pendingGuideId); // switch to showing the newly saved guide
+    await onSavePending(guide);    // parent saves to storage + clears pendingReport
+    setUserSelectedGuideId(pendingGuideId); // switch to showing the newly saved guide
   }
 
   function handleSelectGuide(id: string) {
-    setSelectedGuideId(id);
-    setView("expanded");
+    setUserSelectedGuideId(id);
+    setUserView("expanded");
   }
 
   function handleBackToGrid() {
-    setView("grid");
-    setSelectedGuideId(null);
+    setUserView("grid");
+    setUserSelectedGuideId(null);
   }
 
-  function handleDeleteSelected() {
+  async function handleDeleteSelected() {
     if (!selectedGuideId) return;
     const remaining = guides.filter((g) => g.id !== selectedGuideId);
-    onDelete(selectedGuideId);
+    await onDelete(selectedGuideId);
     if (remaining.length > 0) {
-      setSelectedGuideId(remaining[0].id);
+      setUserSelectedGuideId(remaining[0].id);
     } else {
-      setView("grid");
-      setSelectedGuideId(null);
+      setUserView("grid");
+      setUserSelectedGuideId(null);
     }
   }
 
@@ -189,7 +183,7 @@ export default function MyGuidesPage({
               </div>
             ) : filteredGuides.length === 0 ? (
               <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 py-12 text-center">
-                <p className="text-sm text-gray-500">No guides match "{search}"</p>
+                <p className="text-sm text-gray-500">No guides match &quot;{search}&quot;</p>
               </div>
             ) : (
               <>
@@ -256,7 +250,7 @@ export default function MyGuidesPage({
             <GalleryRow
               guides={guides}
               selectedId={selectedGuideId}
-              onSelect={(id) => setSelectedGuideId(id)}
+              onSelect={(id) => setUserSelectedGuideId(id)}
               onBack={handleBackToGrid}
             />
 

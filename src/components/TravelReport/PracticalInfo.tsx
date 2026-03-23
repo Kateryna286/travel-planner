@@ -112,7 +112,7 @@ export default function PracticalInfo({ practical }: Props) {
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Useful Phrases</p>
                 {language.usefulPhrases.map((ph, i) => (
                   <div key={i} className="flex gap-2 text-xs">
-                    <span className="font-medium text-[#214068] shrink-0">"{ph.phrase}"</span>
+                    <span className="font-medium text-[#214068] shrink-0">&quot;{ph.phrase}&quot;</span>
                     <span className="text-gray-500">→ {ph.translation}</span>
                   </div>
                 ))}

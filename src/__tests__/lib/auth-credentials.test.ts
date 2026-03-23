@@ -55,6 +55,7 @@ describe("authorizeCredentials", () => {
     mockCompare.mockResolvedValue(false);
     const result = await authorizeCredentials("user@example.com", "wrongpassword");
     expect(result).toBeNull();
+    expect(mockCompare).toHaveBeenCalledWith("wrongpassword", "$2b$12$hashed");
   });
 
   it("returns user object when credentials are valid", async () => {

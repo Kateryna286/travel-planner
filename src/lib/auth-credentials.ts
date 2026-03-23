@@ -1,3 +1,10 @@
+/**
+ * Extracted credentials-authorize logic, kept separate from Auth.js config
+ * so it can be unit-tested without the full NextAuth initialisation.
+ *
+ * Returns null for both wrong passwords AND OAuth-only accounts
+ * (passwordHash === null), preventing credential sign-in for Google-only users.
+ */
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";

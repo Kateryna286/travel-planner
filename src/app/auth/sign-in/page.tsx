@@ -14,16 +14,21 @@ export default function SignInPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-    setLoading(false);
-    if (result?.error) {
-      setError("Invalid email or password");
-    } else {
-      window.location.href = "/";
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+      if (result?.error) {
+        setError("Invalid email or password");
+      } else {
+        window.location.href = "/";
+      }
+    } catch {
+      setError("Something went wrong — please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 

@@ -35,5 +35,7 @@ export async function signUpAction(
   await db.insert(users).values({ name, email, passwordHash });
 
   await signIn("credentials", { email, password, redirectTo: "/" });
+  // Auth.js signIn() with redirectTo throws NEXT_REDIRECT internally — this
+  // line is unreachable in normal execution but satisfies the TypeScript return type.
   return { error: null };
 }

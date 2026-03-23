@@ -44,7 +44,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const guide = (await req.json()) as SavedGuide;
+  const guide = (await req.json().catch(() => null)) as SavedGuide | null;
+  if (!guide) return NextResponse.json(
+    { success: false, error: "Invalid JSON body", code: "VALIDATION_ERROR" },
+    { status: 400 }
+  );
 
   await db
     .insert(guides)

@@ -20,10 +20,11 @@ export async function authorizeCredentials(
   email: string,
   password: string
 ): Promise<AuthUser | null> {
+  const normalizedEmail = email.toLowerCase().trim();
   const rows = await db
     .select()
     .from(users)
-    .where(eq(users.email, email))
+    .where(eq(users.email, normalizedEmail))
     .limit(1);
 
   const user = rows[0] ?? null;

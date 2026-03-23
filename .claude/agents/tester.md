@@ -61,8 +61,29 @@ src/
 
 ## When invoked
 
-1. Ask (or infer from context) which component/module to test
-2. Read the source file first
-3. Write tests covering happy path + edge cases
-4. Run `npm test -- --testPathPattern=<filename>` to verify tests pass
-5. Report: how many tests written, how many pass, any issues found
+### For NEW features or bugfixes (TDD — strictly tests first)
+
+1. **Read the spec / requirements** — do NOT read implementation files yet
+2. **Write failing tests** covering the required behavior (happy path + edge cases)
+3. **Run `npm test -- --testPathPattern=<filename>`** — verify tests fail with a meaningful error (not a compile error)
+4. **Commit the failing tests**: `git commit -m "test: <description> (failing — TDD)"`
+5. **Signal to implementation agent**: "Tests written and committed. Implement `<file>` to make these tests pass."
+6. **After implementation**: Run tests again and verify all pass
+7. **Commit passing state**: `git commit -m "test: <description> (passing)"`
+
+### For existing code (test coverage)
+
+1. Read the source file
+2. Write tests covering happy path + edge cases
+3. Run tests — expect them to pass (existing code already implements behavior)
+4. If any test fails, it reveals a bug — report it before fixing
+5. Commit: `git commit -m "test: add <module> test coverage"`
+
+### Rules
+
+- Mock `@anthropic-ai/sdk` in all API tests — never make real API calls
+- Mock `localStorage` using `jest-localstorage-mock` (already in `jest.setup.ts`)
+- Use `userEvent` (not `fireEvent`) for all user interactions
+- Each test file must have a `describe` block matching the component/module name
+- Test both happy path AND error/edge cases
+- Never claim tests pass without running `npm test` and showing the output

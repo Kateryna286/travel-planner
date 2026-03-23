@@ -16,6 +16,7 @@
  * TravelReport and returned as `{ success: true, report }`.
  *
  * Error codes returned in `{ success: false, error, code }`:
+ *   UNAUTHORIZED        — request is not authenticated (401)
  *   VALIDATION_ERROR    — body fails TravelFormSchema (400)
  *   INVALID_DESTINATION — AI rejected the destination (422)
  *   RATE_LIMIT          — Anthropic rate limit hit (429)

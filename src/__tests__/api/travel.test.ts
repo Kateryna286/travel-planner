@@ -168,5 +168,6 @@ describe("POST /api/travel", () => {
     const json = await res.json();
     expect(json.success).toBe(false);
     expect(json.code).toBe("UNAUTHORIZED");
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 });

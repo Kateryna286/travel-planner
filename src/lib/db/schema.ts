@@ -16,7 +16,7 @@ export const users = pgTable("user", {
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: text("image"),
   passwordHash: text("passwordHash"),
-  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
 });
 
 export const accounts = pgTable(
@@ -75,5 +75,5 @@ export const guides = pgTable("guide", {
   groupSize: jsonb("groupSize").notNull(),
   report: jsonb("report").notNull(),
   formData: jsonb("formData").notNull(),
-  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow(),
+  createdAt: timestamp("createdAt", { mode: "date" }).defaultNow().notNull(),
 });

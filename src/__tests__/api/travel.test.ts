@@ -16,6 +16,10 @@ jest.mock("@/lib/anthropic", () => ({
 import { anthropic } from "@/lib/anthropic";
 const mockCreate = anthropic.messages.create as jest.Mock;
 
+jest.mock("@/lib/auth", () => ({ auth: jest.fn() }));
+import { auth } from "@/lib/auth";
+const mockAuth = auth as jest.Mock;
+
 // Minimal valid request body
 const VALID_BODY = {
   destination: "Paris",
@@ -86,6 +90,7 @@ const PRACTICALITIES_RESPONSE = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockAuth.mockResolvedValue({ user: { id: "user-123" } }); // authenticated by default
   mockCreate
     .mockResolvedValueOnce(EXPERIENCES_RESPONSE)
     .mockResolvedValueOnce(PRACTICALITIES_RESPONSE);
@@ -154,5 +159,14 @@ describe("POST /api/travel", () => {
   it("calls Anthropic exactly twice (two parallel calls)", async () => {
     await POST(makeRequest(VALID_BODY));
     expect(mockCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns 401 when not authenticated", async () => {
+    mockAuth.mockResolvedValue(null);
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json.success).toBe(false);
+    expect(json.code).toBe("UNAUTHORIZED");
   });
 });

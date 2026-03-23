@@ -159,9 +159,7 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {activeTab === "guides" && session && (
-              <MigrationBanner onImport={save} />
-            )}
+            {session && <MigrationBanner onImport={save} />}
             <MyGuidesPage
               guides={guides}
               pendingReport={pendingReport}

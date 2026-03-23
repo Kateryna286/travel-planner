@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getGuides } from "@/lib/guides-storage";
+import { useState } from "react";
+import { getGuides, deleteGuide } from "@/lib/guides-storage";
 import type { SavedGuide } from "@/lib/guides-storage";
 
 const DISMISSED_KEY = "guidesImportDismissed";
@@ -11,42 +11,34 @@ interface Props {
 }
 
 export function MigrationBanner({ onImport }: Props) {
-  const [localGuides, setLocalGuides] = useState<SavedGuide[]>([]);
+  const [localGuides, setLocalGuides] = useState<SavedGuide[]>(() => {
+    if (typeof window === "undefined") return [];
+    if (localStorage.getItem(DISMISSED_KEY)) return [];
+    return getGuides();
+  });
   const [importing, setImporting] = useState(false);
-  const [done, setDone] = useState(false);
+  const [importError, setImportError] = useState(false);
 
-  useEffect(() => {
-    if (localStorage.getItem(DISMISSED_KEY)) return;
-    const guides = getGuides();
-    if (guides.length > 0) setLocalGuides(guides);
-  }, []);
-
-  if (localGuides.length === 0 || done) return null;
+  if (localGuides.length === 0) return null;
 
   async function handleImport() {
     setImporting(true);
-    const remaining = [...localGuides];
+    setImportError(false);
+    let remaining = [...localGuides];
     for (const guide of localGuides) {
       try {
         await onImport(guide);
-        // Remove each guide from localStorage only after successful save
-        const stored = localStorage.getItem("travelGuides");
-        if (stored) {
-          const all = JSON.parse(stored) as SavedGuide[];
-          localStorage.setItem(
-            "travelGuides",
-            JSON.stringify(all.filter((g) => g.id !== guide.id))
-          );
-        }
-        remaining.splice(remaining.indexOf(guide), 1);
+        deleteGuide(guide.id);
+        remaining = remaining.filter((g) => g.id !== guide.id);
       } catch {
         // leave failed guides in localStorage — retry on next sign-in
       }
     }
     if (remaining.length === 0) {
       localStorage.setItem(DISMISSED_KEY, "1");
-      setDone(true);
+      setLocalGuides([]);
     } else {
+      setImportError(true);
       setLocalGuides(remaining);
     }
     setImporting(false);
@@ -59,9 +51,14 @@ export function MigrationBanner({ onImport }: Props) {
 
   return (
     <div className="mb-6 flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm">
-      <span className="text-blue-800">
-        You have {localGuides.length} guide{localGuides.length !== 1 ? "s" : ""} saved locally — import them to your account?
-      </span>
+      <div>
+        <span className="text-blue-800">
+          You have {localGuides.length} guide{localGuides.length !== 1 ? "s" : ""} saved locally — import them to your account?
+        </span>
+        {importError && (
+          <p className="mt-1 text-xs text-red-600">Some guides could not be imported — try again.</p>
+        )}
+      </div>
       <div className="ml-4 flex shrink-0 gap-2">
         <button
           onClick={handleImport}
